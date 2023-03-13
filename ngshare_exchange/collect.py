@@ -164,4 +164,4 @@ class ExchangeCollect(Exchange, ABCExchangeCollect):
         """
         Repurposed version of Exchange.do_copy.
         """
-        self.decode_dir(src, dest)
+        self.decode_dir(src, dest, ignore=self.ignore_patterns())
