@@ -219,6 +219,7 @@ class Exchange(ABCExchange):
                         if ignore(subdir, content, 0):
                             return
                     walkdir(full_path)
+
         walkdir(src_dir)
 
         dir_tree = {'user': self.username, 'files': json.dumps(encoded_files)}
