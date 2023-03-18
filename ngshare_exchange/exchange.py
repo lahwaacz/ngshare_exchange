@@ -188,28 +188,38 @@ class Exchange(ABCExchange):
 
     def encode_dir(self, src_dir, ignore=None):
         encoded_files = []
-        for subdir, dirs, files in os.walk(src_dir):
-            for file_name in files:
-                file_path = subdir + os.sep + file_name
-                data_bytes = open(file_path, 'rb').read()
-                if ignore:
-                    if ignore(subdir, file_name, len(data_bytes)):
-                        continue
 
-                # check if you have a subdir
-                sub_dir = subdir.split(os.sep)[-1]
-                if sub_dir != self.coursedir.assignment_id:
-                    file_path = os.path.join(
-                        os.path.relpath(subdir, src_dir), file_name
-                    )
-                else:
-                    file_path = file_name
+        # recursively navigate subdirectories and their contents
+        def walkdir(subdir):
+            contents = os.listdir(subdir)
+            for content in contents:
+                full_path = os.path.join(subdir, content)
+                if os.path.isfile(full_path):
+                    data_bytes = open(full_path, 'rb').read()
+                    if ignore:
+                        if ignore(subdir, content, len(data_bytes)):
+                            continue
 
-                self.log.info('Encoding: {}'.format(file_path))
-                encoded = base64.b64encode(data_bytes)
-                content = str(encoded, 'utf-8')
-                file_map = {'path': file_path, 'content': content}
-                encoded_files.append(file_map)
+                    # check if you have a subdir
+                    sub_dir = subdir.split(os.sep)[-1]
+                    if sub_dir != self.coursedir.assignment_id:
+                        file_path = os.path.join(
+                            os.path.relpath(subdir, src_dir), content
+                        )
+                    else:
+                        file_path = content
+
+                    self.log.info('Encoding: {}'.format(file_path))
+                    encoded = base64.b64encode(data_bytes)
+                    content = str(encoded, 'utf-8')
+                    file_map = {'path': file_path, 'content': content}
+                    encoded_files.append(file_map)
+                elif os.path.isdir(full_path):
+                    if ignore:
+                        if ignore(subdir, content, 0):
+                            return
+                    walkdir(full_path)
+        walkdir(src_dir)
 
         dir_tree = {'user': self.username, 'files': json.dumps(encoded_files)}
         return dir_tree
