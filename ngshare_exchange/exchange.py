@@ -22,11 +22,7 @@ import json
 
 class Exchange(ABCExchange):
 
-    username = (
-        os.environ['JUPYTERHUB_USER']
-        if 'JUPYTERHUB_USER' in os.environ
-        else os.environ['USER']
-    )
+    username = os.environ.get('JUPYTERHUB_USER', os.environ.get('USER'))
 
     _ngshare_url = Unicode(
         help=dedent(
@@ -212,7 +208,9 @@ class Exchange(ABCExchange):
                 file_map = {'path': file_path, 'content': content}
                 encoded_files.append(file_map)
 
-        dir_tree = {'user': self.username, 'files': json.dumps(encoded_files)}
+        dir_tree = {'files': json.dumps(encoded_files)}
+        if self.username:
+            dir_tree['user'] = self.username
         return dir_tree
 
     def init_src(self):
